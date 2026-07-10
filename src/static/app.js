@@ -489,7 +489,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Determine which platform was clicked based on button class
     if (triggerButton.classList.contains("share-twitter")) {
-      const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+      const twitterUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
       window.open(twitterUrl, "_blank", "noopener,noreferrer");
     } else if (triggerButton.classList.contains("share-facebook")) {
       const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`;
@@ -498,18 +498,42 @@ document.addEventListener("DOMContentLoaded", () => {
       const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText + " " + shareUrl)}`;
       window.open(whatsappUrl, "_blank", "noopener,noreferrer");
     } else if (triggerButton.classList.contains("share-copy")) {
-      navigator.clipboard
-        .writeText(shareText + "\n" + shareUrl)
-        .then(() => {
+      const copyText = shareText + "\n" + shareUrl;
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard
+          .writeText(copyText)
+          .then(() => {
+            const originalText = triggerButton.textContent.trim();
+            triggerButton.textContent = "✓";
+            setTimeout(() => {
+              triggerButton.textContent = originalText;
+            }, 2000);
+          })
+          .catch(() => {
+            showMessage("Could not copy link. Please try again.", "error");
+          });
+      } else {
+        // Fallback for non-HTTPS or unsupported browsers
+        const textArea = document.createElement("textarea");
+        textArea.value = copyText;
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          document.execCommand("copy");
           const originalText = triggerButton.textContent.trim();
           triggerButton.textContent = "✓";
           setTimeout(() => {
             triggerButton.textContent = originalText;
           }, 2000);
-        })
-        .catch(() => {
-          showMessage("Could not copy link. Please try again.", "error");
-        });
+        } catch {
+          showMessage("Could not copy link. Please copy manually.", "error");
+        } finally {
+          document.body.removeChild(textArea);
+        }
+      }
     }
   }
 
