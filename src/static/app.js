@@ -472,6 +472,47 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Function to share an activity on social media or copy a link
+  function shareActivity(name, details, triggerButton) {
+    const pageUrl = window.location.href.split("?")[0];
+    const schedule = formatSchedule(details);
+    const shareText = `Check out "${name}" at Mergington High School! ${details.description} Schedule: ${schedule}`;
+    const shareUrl = pageUrl;
+
+    // Use the native Web Share API on supported devices (e.g., mobile)
+    if (navigator.share) {
+      navigator
+        .share({ title: name, text: shareText, url: shareUrl })
+        .catch(() => {});
+      return;
+    }
+
+    // Determine which platform was clicked based on button class
+    if (triggerButton.classList.contains("share-twitter")) {
+      const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+      window.open(twitterUrl, "_blank", "noopener,noreferrer");
+    } else if (triggerButton.classList.contains("share-facebook")) {
+      const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`;
+      window.open(facebookUrl, "_blank", "noopener,noreferrer");
+    } else if (triggerButton.classList.contains("share-whatsapp")) {
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText + " " + shareUrl)}`;
+      window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+    } else if (triggerButton.classList.contains("share-copy")) {
+      navigator.clipboard
+        .writeText(shareText + "\n" + shareUrl)
+        .then(() => {
+          const originalText = triggerButton.textContent.trim();
+          triggerButton.textContent = "✓";
+          setTimeout(() => {
+            triggerButton.textContent = originalText;
+          }, 2000);
+        })
+        .catch(() => {
+          showMessage("Could not copy link. Please try again.", "error");
+        });
+    }
+  }
+
   // Function to render a single activity card
   function renderActivityCard(name, details) {
     const activityCard = document.createElement("div");
@@ -569,6 +610,27 @@ document.addEventListener("DOMContentLoaded", () => {
         `
         }
       </div>
+      <div class="share-section">
+        <span class="share-label">Share:</span>
+        <div class="share-buttons">
+          <button class="share-btn share-twitter tooltip" data-activity="${name}" aria-label="Share on X (Twitter)">
+            𝕏
+            <span class="tooltip-text">Share on X (Twitter)</span>
+          </button>
+          <button class="share-btn share-facebook tooltip" data-activity="${name}" aria-label="Share on Facebook">
+            f
+            <span class="tooltip-text">Share on Facebook</span>
+          </button>
+          <button class="share-btn share-whatsapp tooltip" data-activity="${name}" aria-label="Share on WhatsApp">
+            💬
+            <span class="tooltip-text">Share on WhatsApp</span>
+          </button>
+          <button class="share-btn share-copy tooltip" data-activity="${name}" aria-label="Copy link">
+            🔗
+            <span class="tooltip-text">Copy link</span>
+          </button>
+        </div>
+      </div>
     `;
 
     // Add click handlers for delete buttons
@@ -586,6 +648,14 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
     }
+
+    // Add click handlers for share buttons
+    activityCard.querySelectorAll(".share-btn").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        shareActivity(name, details, button);
+      });
+    });
 
     activitiesList.appendChild(activityCard);
   }
